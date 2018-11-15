@@ -12,7 +12,7 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet import protocol
 from twisted.application import service, internet
-
+import twisted.application.strports
 
 class MyChat(basic.LineReceiver):
     delimiter = '\n'
@@ -73,4 +73,4 @@ factory.client_factory.protocol = MyChat
 factory.client_factory.clients = factory.clients
 
 application = service.Application("chatserver")
-internet.TCPServer(1025, factory).setServiceParent(application)
+twisted.application.strports.service("tcp:1025", factory).setServiceParent(application)
