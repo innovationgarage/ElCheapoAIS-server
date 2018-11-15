@@ -13,18 +13,32 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet import protocol
 from twisted.application import service, internet
 import twisted.application.strports
+import json
 
-class MyChat(basic.LineReceiver):
+
+class FileOutput(object):
+    def __init__(self, filename):
+        self.file = open(filename, "w")
+        self.client_mode = "receiver"
+        
+    def sendLine(self, line):
+        self.file.write(line + "\n")
+        self.file.flush()
+
+    def __delete__(self):
+        self.file.close()
+    
+class Multiplexer(basic.LineReceiver):
     delimiter = '\n'
     
     def connectionMade(self):
         print("Got new client!")
         self.client_mode = None
-        self.factory.clients.append(self)
+        self.factory.server.clients.append(self)
 
     def connectionLost(self, reason):
         print("Lost a client!")
-        self.factory.clients.remove(self)
+        self.factory.server.clients.remove(self)
 
     def lineReceived(self, line):
         print("received", repr(line))
@@ -45,32 +59,44 @@ class MyChat(basic.LineReceiver):
                 if self.client_mode != "sender":
                     answer = {"error": {"message": "Not in sending mode"}}
                 else:
-                    for c in self.factory.clients:
+                    for c in self.factory.server.clients:
                         if c.client_mode == "receiver":
-                            c.message(line)
+                            c.sendLine(line)
         except Exception as e:
             answer = {"error": {"code": -32603, "message": unicode(e)}}
 
         if answer is not None:
-            self.message('?' + json.dumps(answer))
+            self.sendLine('?' + json.dumps(answer))
             
-    def message(self, message):
-        self.transport.write(message + b'\n')
-
     def cmd_mode(self, mode=None):
         self.client_mode = mode
         return True
-        
-    def cmd_connect(self, host, port):
-        TCP4ClientEndpoint(reactor, host, port).connect(self.factory.client_factory)
-        return True
 
+class Server(object):
+    def __init__(self):
+        self.clients = []
+
+with open("config.json") as f:
+    config = json.load(f)
+
+server = Server()
 factory = protocol.ServerFactory()
-factory.protocol = MyChat
-factory.clients = []
-factory.client_factory = protocol.ClientFactory()
-factory.client_factory.protocol = MyChat
-factory.client_factory.clients = factory.clients
+factory.protocol = Multiplexer
+factory.server = server
+
+client_factory = protocol.ClientFactory()
+client_factory.protocol = Multiplexer
+client_factory.server = server
 
 application = service.Application("chatserver")
-twisted.application.strports.service("tcp:1025", factory).setServiceParent(application)
+for conn in config["connections"]:
+    if conn["type"] == "connect":
+        twisted.internet.endpoints.clientFromString(
+            reactor, str(conn["connect"])
+        ).connect(client_factory)
+    elif conn["type"] == "listen":
+        twisted.application.strports.service(
+            str(conn["listen"]), factory
+        ).setServiceParent(application)
+    elif conn["type"] == "file":
+        server.clients.append(FileOutput(conn["filename"]))
