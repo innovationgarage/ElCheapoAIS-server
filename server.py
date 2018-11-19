@@ -84,16 +84,17 @@ factory = protocol.ServerFactory()
 factory.protocol = Multiplexer
 factory.server = server
 
-client_factory = protocol.ClientFactory()
-client_factory.protocol = Multiplexer
-client_factory.server = server
+#client_factory = protocol.ClientFactory()
+#client_factory.protocol = Multiplexer
+#client_factory.server = server
 
 application = service.Application("chatserver")
 for conn in config["connections"]:
     if conn["type"] == "connect":
-        twisted.internet.endpoints.clientFromString(
-            reactor, str(conn["connect"])
-        ).connect(client_factory)
+        twisted.application.internet.ClientService(
+            twisted.internet.endpoints.clientFromString(
+                reactor, str(conn["connect"])
+            ), factory).setServiceParent(application)
     elif conn["type"] == "listen":
         twisted.application.strports.service(
             str(conn["listen"]), factory
