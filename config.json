@@ -3,6 +3,6 @@
         {"direction": "source", "type": "listen", "listen": "tcp:1024"},
         {"direction": "destination", "type": "listen", "listen": "tcp:1025"},
         {"direction": "destination", "type": "connect", "connect": "tcp:localhost:1026"},
-        {"direction": "destination", "type": "file", "filename": "foo.txt"}
+        {"direction": "destination", "type": "file", "pattern": "foo-%(YMDHMS)s.txt", "size": 3}
     ]
 }

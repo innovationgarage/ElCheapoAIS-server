@@ -14,16 +14,40 @@ from twisted.internet import protocol
 from twisted.application import service, internet
 import twisted.application.strports
 import json
-
+import datetime
 
 class FileOutput(object):
-    def __init__(self, filename):
-        self.file = open(filename, "w")
+    def __init__(self, pattern, size):
         self.direction = "destination"
+        self.pattern = pattern
+        self.size = size
+        self.file = None
+        self.filecount = 0
+        self.open()
+
+    def open(self):
+        if self.file is not None:
+            self.file.close()
+        timestamp = datetime.datetime.now()
+        filename = self.pattern % {
+            "index": self.filecount,
+            "Y": timestamp.strftime("%Y"),
+            "YM": timestamp.strftime("%Y-%m"),
+            "YMD": timestamp.strftime("%Y-%m-%d"),
+            "YMDH": timestamp.strftime("%Y-%m-%d %H"),
+            "YMDHM": timestamp.strftime("%Y-%m-%d %H:%M"),
+            "YMDHMS": timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        self.file = open(filename, "w")
+        self.count = 0
+        self.filecount += 1
         
     def sendLine(self, line):
         self.file.write(line + "\n")
         self.file.flush()
+        self.count += 1
+        if self.count >= self.size:
+            self.open()
 
     def __delete__(self):
         self.file.close()
@@ -108,4 +132,4 @@ for conn in config["connections"]:
             str(conn["listen"]), factory
         ).setServiceParent(application)
     elif conn["type"] == "file":
-        server.clients.append(FileOutput(conn["filename"]))
+        server.clients.append(FileOutput(conn["pattern"], conn["size"]))
