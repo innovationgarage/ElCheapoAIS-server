@@ -19,7 +19,7 @@ import json
 class FileOutput(object):
     def __init__(self, filename):
         self.file = open(filename, "w")
-        self.client_mode = "receiver"
+        self.direction = "destination"
         
     def sendLine(self, line):
         self.file.write(line + "\n")
@@ -30,10 +30,12 @@ class FileOutput(object):
     
 class Multiplexer(basic.LineReceiver):
     delimiter = '\n'
-    
+
+    def __init__(self, direction):
+        self.direction = direction
+        
     def connectionMade(self):
         print("Got new client!")
-        self.client_mode = None
         self.factory.server.clients.append(self)
 
     def connectionLost(self, reason):
@@ -56,11 +58,11 @@ class Multiplexer(basic.LineReceiver):
                     else:
                         answer = {"error": {"code": -32603, "message": unicode(e)}}
             else:
-                if self.client_mode != "sender":
-                    answer = {"error": {"message": "Not in sending mode"}}
+                if self.direction != "source":
+                    answer = {"error": {"message": "Not in sending mode: %s" % self.direction}}
                 else:
                     for c in self.factory.server.clients:
-                        if c.client_mode == "receiver":
+                        if c.direction == "destination":
                             c.sendLine(line)
         except Exception as e:
             answer = {"error": {"code": -32603, "message": unicode(e)}}
@@ -69,27 +71,33 @@ class Multiplexer(basic.LineReceiver):
             self.sendLine('?' + json.dumps(answer))
             
     def cmd_mode(self, mode=None):
-        self.client_mode = mode
+        self.direction = mode
         return True
 
 class Server(object):
     def __init__(self):
         self.clients = []
 
+server = Server()
+class Factory(protocol.ServerFactory):
+    def __init__(self, direction):
+        self.direction = direction
+        self.server = server
+    def buildProtocol(self, addr):
+        res = Multiplexer(self.direction)
+        res.factory = self
+        return res
+    
 with open("config.json") as f:
     config = json.load(f)
-
-server = Server()
-factory = protocol.ServerFactory()
-factory.protocol = Multiplexer
-factory.server = server
-
-#client_factory = protocol.ClientFactory()
-#client_factory.protocol = Multiplexer
-#client_factory.server = server
+    
+factories = {}
+for direction in ("source", "destination"):
+    factories[direction] = Factory(direction)
 
 application = service.Application("chatserver")
 for conn in config["connections"]:
+    factory = factories[conn["direction"]]
     if conn["type"] == "connect":
         twisted.application.internet.ClientService(
             twisted.internet.endpoints.clientFromString(
