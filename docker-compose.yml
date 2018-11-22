@@ -1,0 +1,25 @@
+version: "3"
+services:
+  cartogateway:
+    image: ymslanda.innovationgarage.tech:5000/elcheapoais_cartogateway:latest
+    environment:
+      DATABASE: "${DATABASE}"
+      
+  concentrator:
+    image: ymslanda.innovationgarage.tech:5000/elcheapoais_concentrator:latest
+    environment:
+      DATABASE: "${DATABASE}"
+      CONFIG: |
+        {
+            "connections": [
+                {"direction": "source", "type": "listen", "listen": "tcp:1024"},
+                {"direction": "destination", "type": "listen", "listen": "tcp:1025"},
+                {"direction": "destination", "type": "connect", "connect": "tcp:cartogateway:1024"},
+                {"direction": "destination", "type": "file", "pattern": "/data/elcheapoais-%(YMDHMS)s.txt", "size": 3}
+            ]
+        }
+    volumes:
+      - /ymslanda/PortPollution/ais/ElCheapoAIS:/data
+    ports:
+      - "1024:1024"
+      - "1025:1025"
