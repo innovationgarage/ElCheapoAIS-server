@@ -4,6 +4,8 @@ services:
     image: ymslanda.innovationgarage.tech:5000/elcheapoais_cartogateway:latest
     environment:
       DATABASE: "${DATABASE}"
+    networks:
+      - elcheapoais
       
   concentrator:
     image: ymslanda.innovationgarage.tech:5000/elcheapoais_concentrator:latest
@@ -23,3 +25,8 @@ services:
     ports:
       - "1024:1024"
       - "1025:1025"
+    networks:
+      - elcheapoais
+
+networks:
+  elcheapoais:
