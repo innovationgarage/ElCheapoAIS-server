@@ -1,14 +1,14 @@
 version: "3"
 services:
   cartogateway:
-    image: ymslanda.innovationgarage.tech:5000/elcheapoais_cartogateway:latest
+    image: ${REPO}elcheapoais_cartogateway:latest
     environment:
       DATABASE: "${DATABASE}"
     networks:
       - elcheapoais
       
   concentrator:
-    image: ymslanda.innovationgarage.tech:5000/elcheapoais_concentrator:latest
+    image: ${REPO}elcheapoais_concentrator:latest
     environment:
       DATABASE: "${DATABASE}"
       CONFIG: |
@@ -21,10 +21,32 @@ services:
             ]
         }
     volumes:
-      - /ymslanda/PortPollution/ais/ElCheapoAIS:/data
+      - ${DATA}:/data
     ports:
       - "1024:1024"
       - "1025:1025"
+    networks:
+      - elcheapoais
+
+  cartodb:
+    image: ${REPO}elcheapoais_cartodb
+    volumes:
+      - ${DBSTORAGE}:/var/lib/postgresql
+    ports:
+      - "80:80"
+#      - "5432:5432"
+    environment:
+      CARTO_HOSTNAME: ${HOST}
+    hostname: ${HOST}
+    networks:
+      - elcheapoais
+
+  manhole:
+    image: ${REPO}elcheapoais_manhole
+    volumes:
+      - ${MANHOLE}:/ElcheapoAIS_manhole/database
+    ports:
+      - "8000:8000"
     networks:
       - elcheapoais
 
