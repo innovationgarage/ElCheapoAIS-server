@@ -33,8 +33,7 @@ services:
     volumes:
       - ${DBSTORAGE}:/var/lib/postgresql
     ports:
-      - "80:80"
-#      - "5432:5432"
+      - "1027:80"
     environment:
       CARTO_HOSTNAME: ${HOST}
     hostname: ${HOST}
@@ -44,9 +43,9 @@ services:
   manhole:
     image: ${REPO}elcheapoais_manhole
     volumes:
-      - ${MANHOLE}:/ElcheapoAIS_manhole/database
+      - ${MANHOLE}:/ElcheapoAIS_manhole/ElcheapoAIS_manhole/database
     ports:
-      - "8000:8000"
+      - "1026:8000"
     networks:
       - elcheapoais
 
