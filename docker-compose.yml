@@ -1,16 +1,15 @@
 version: "3"
 services:
-  cartogateway:
-    image: ${REPO}elcheapoais_cartogateway:latest
-    environment:
-      DATABASE: "${DATABASE}"
-    networks:
-      - elcheapoais
+  # cartogateway:
+  #   image: ${REPO}elcheapoais_cartogateway:latest
+  #   environment:
+  #     DATABASE: "${DATABASE}"
+  #   networks:
+  #     - elcheapoais
       
   concentrator:
     image: ${REPO}elcheapoais_concentrator:latest
     environment:
-      DATABASE: "${DATABASE}"
       CONFIG: |
         {
             "connections": [
@@ -28,17 +27,17 @@ services:
     networks:
       - elcheapoais
 
-  cartodb:
-    image: ${REPO}elcheapoais_cartodb
-    volumes:
-      - ${DBSTORAGE}:/var/lib/postgresql
-    ports:
-      - "1027:80"
-    environment:
-      CARTO_HOSTNAME: ${HOST}
-    hostname: ${HOST}
-    networks:
-      - elcheapoais
+  # cartodb:
+  #   image: ${REPO}elcheapoais_cartodb
+  #   volumes:
+  #     - ${DBSTORAGE}:/var/lib/postgresql
+  #   ports:
+  #     - "1027:80"
+  #   environment:
+  #     CARTO_HOSTNAME: ${HOST}
+  #   hostname: ${HOST}
+  #   networks:
+  #     - elcheapoais
 
   manhole:
     image: ${REPO}elcheapoais_manhole
